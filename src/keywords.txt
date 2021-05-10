@@ -1,0 +1,28 @@
+#######################################
+# Syntax Coloring Map For LINBus
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+lin_bus	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+master		KEYWORD2
+slave		KEYWORD2
+read		KEYWORD2
+readStream	KEYWORD2
+write		KEYWORD2
+setPins		KEYWORD2
+
+sleep		KEYWORD2
+busWakeUp	KEYWORD2
+waitTransferTime    KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
