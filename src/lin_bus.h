@@ -14,7 +14,7 @@
 #include <Arduino.h>
 
 #define LIN_DEBUG_SERIAL   Serial       // Serial interface used for debug output
-#define LIN_DEBUG_LEVEL    0            // Debug level (0=no output, 1=error msg, 2=sent/received bytes)
+#define LIN_DEBUG_LEVEL    0           // Debug level (0=no output, 1=error msg, 2=sent/received bytes)
 
 /**
 //    \brief LIN version of checksum
@@ -33,6 +33,7 @@ class lin_bus : public Stream {
     bool slave(uint16_t baudrate, uint8_t ident);  // Initialize the device as slaver
 
     int read(uint8_t *data, uint8_t data_size); // read data from LIN bus, checksum and ident validation
+	int listen(uint8_t ident,uint8_t *data, uint8_t data_size); // read data from LIN bus slaver node, checksum and ident validation
     int readStream(uint8_t *data,uint8_t data_size);  // read data from LIN bus
     uint16_t write(uint8_t ident, uint8_t *data, uint8_t data_size);  // write whole package  
       

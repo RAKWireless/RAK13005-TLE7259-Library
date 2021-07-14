@@ -48,7 +48,7 @@ bool lin_bus::master(uint16_t baudrate)
   if(begin(_baudrate))
   {
    oneBitPeriod = 1000000.0f/_baudrate;
-   sleep(0);
+   sleep(1);
    return true; 
   }
   else
@@ -117,6 +117,7 @@ bool lin_bus::begin(uint16_t baudrate)
 void lin_bus::end()
 {
   _serial->end();
+  sleep(0);
 //  _serial->setTimeout(1000);
 }
 
@@ -327,8 +328,8 @@ uint16_t lin_bus::write(uint8_t ident, uint8_t *data, uint8_t data_size)
     for(int i=0;i<data_size;i++) _serial->write(data[i]); // write data to serial
     _serial->write(check); // write Checksum Byte to serial
     _serial->flush(); //ensure transfer all
-    _serial->end(); // clear Serial config  
-    sleep(0); // Go to Sleep mode      
+//    _serial->end(); // clear Serial config  
+//    sleep(0); // Go to Sleep mode      
     transferTime = (44+10*data_size)*oneBitPeriod*1.4;//(34+(data_size+1)*10)*oneBitPeriod*1.4=(44+10*data_size)*oneBitPeriod*1.4us; //max single frame transfer time
     transferTime = transferTime*0.001;  //us to ms
    #if (LIN_DEBUG_LEVEL >= 1)
@@ -386,13 +387,58 @@ int lin_bus::read(uint8_t *data, uint8_t data_size)
            data[j] = rec[j+2];             
           }
           return 1;
-        }  
-        return 0;
+        }
       }
-      else
+    }
+   return 0;
+}
+/**
+  \brief       read data from LIN bus, checksum and ident validation
+  \param[in] 	read slaver node id 
+  \param[out]  *data       data buffer pointer  
+  \param[out]  data_size   data buffer size  
+  \return      if read data is right return 1 else return 0
+*/
+int lin_bus::listen(uint8_t ident,uint8_t *data, uint8_t data_size)
+{
+  uint8_t rec[data_size+3]; 
+  uint8_t readData[data_size+1]; 	
+    if(_serial->available()>(data_size+3))
+    { // Check if there is an event on LIN bus      
+      g_head2 = g_head1;
+      g_head1 = _serial->read();   
+      #if (LIN_DEBUG_LEVEL >= 2)
+         {         
+          LIN_DEBUG_SERIAL.printf("DEBUG_readBytes g_head1 is: %d\r\n",g_head1);
+          LIN_DEBUG_SERIAL.printf("DEBUG_readBytes g_head2 is: %d\r\n",g_head2);
+         } 
+      #endif     
+      if((g_head2==0x55)&&(g_head1 == protectID(ident)))
       {
-        return 0;  
-      } 
+        _serial->readBytes(readData,data_size+1);
+        rec[0] = g_head2;
+        rec[1] = g_head1;
+        for(int i=0;i<(data_size+1);i++)
+        {
+          rec[i+2] = readData[i];          
+        }          
+         #if (LIN_DEBUG_LEVEL >= 2)
+         {
+          for(int i=0;i<(data_size+3);i++)
+          {
+            LIN_DEBUG_SERIAL.printf("DEBUG_readBytes data[%d] is %d\r\n",i,rec[i]);
+          }
+         } 
+        #endif  
+        if(validateChecksum(rec,data_size+3))
+        {
+          for(int j=0;j<data_size;j++)
+          {
+           data[j] = rec[j+2];             
+          }
+          return 1;
+        }
+      }
     }
    return 0;
 }
@@ -504,7 +550,7 @@ int lin_bus::busWakeUp(void)
   \param[in]  void     
   \return     time the transfer will take
 */
-uint16_t lin_bus::waitTransferTime(uint16_t baudrate, uint8_t dataSize)
+uint16_t lin_bus::waitTransferTime(uint16_t baudrate,uint8_t dataSize)
 {    
   uint16_t maxtTansferTime;
   maxtTansferTime = (dataSize*10+34)*(1000.f/baudrate)*1.4;
