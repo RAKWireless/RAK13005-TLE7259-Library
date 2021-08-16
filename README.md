@@ -5,12 +5,12 @@
 
 The TLE7259 is a LIN bus transceiver chip from Infineon. This library provides basic support for LIN bus master and slave functionality.
 
-[*RAKwireless RAK13005 LIN bus interface*](https://docs.rakwireless.com/Product-Categories/WisBlock/#wisblock-io)
+[*RAKwireless RAK13005 LIN bus interface*](https://store.rakwireless.com/products/lin-bus-module-rak13005)
 
 # Documentation
 
 * **[Product Repository](https://github.com/RAKWireless/RAK13005-TLE7259-Library)** - Product repository for the RAKWireless RAK13005 LIN Bus module.
-* **[Documentation](https://docs.rakwireless.com/Product-Categories/WisBlock/#wisblock-io)** - Documentation and Quick Start Guide for the RAK13005 LIN Bus module.
+* **[Documentation](https://docs.rakwireless.com/Product-Categories/WisBlock/RAK13005/Overview/)** - Documentation and Quick Start Guide for the RAK13005 LIN Bus module.
 
 # Installation
 
