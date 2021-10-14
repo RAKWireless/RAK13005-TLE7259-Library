@@ -9,6 +9,7 @@
 #include  "lin_bus.h"   //library: http://librarymanager/All#RAKwireless_TLE7259_LIN_Bus_library
 
 #if defined(_VARIANT_RAK4630_)
+#include <Adafruit_TinyUSB.h>
   #define BOARD "RAK4631 "
   #define LED_GREEN 35
   #define LED_BLUE  36
