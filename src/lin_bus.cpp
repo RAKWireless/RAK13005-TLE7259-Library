@@ -289,6 +289,12 @@ uint16_t lin_bus::serialPause(int no_bits)
   unsigned int del = oneBitPeriod*no_bits; // delay for number of bits (no-bits) in microseconds, depends on period
   _serial->flush();    //清空串口缓存
   _serial->end();  
+  #if defined(_VARIANT_RAK11300_)
+  {
+    gpio_set_function(SERIAL1_TX,  GPIO_FUNC_SIO); 
+    gpio_set_function(SERIAL1_RX,  GPIO_FUNC_SIO); 
+  } 
+  #endif 
   setPinHigh(_txPin);
   delayMicroseconds(oneBitPeriod/2); //delayMicroseconds(oneBitPeriod/2); //
   setPinLow(_txPin);
@@ -323,13 +329,20 @@ uint16_t lin_bus::write(uint8_t ident, uint8_t *data, uint8_t data_size)
   // Synch Break
     serialPause(13);
     _serial->begin(_baudrate); // config Serial
+  #if defined(_VARIANT_RAK11300_)
+  {
+    gpio_set_function(SERIAL1_TX, GPIO_FUNC_UART);
+    gpio_set_function(SERIAL1_RX, GPIO_FUNC_UART);
+  }
+  #endif
     _serial->write(0x55); // write Synch Byte to serial
     _serial->write(id); //_serial->write(ident); // write Identification Byte to serial
     for(int i=0;i<data_size;i++) _serial->write(data[i]); // write data to serial
     _serial->write(check); // write Checksum Byte to serial
+    delayMicroseconds(oneBitPeriod*20); //delayMicroseconds(oneBitPeriod/2); // wait for transmit complete
     _serial->flush(); //ensure transfer all
 //    _serial->end(); // clear Serial config  
-//    sleep(0); // Go to Sleep mode      
+//    sleep(0); // Go to Sleep mode   
     transferTime = (44+10*data_size)*oneBitPeriod*1.4;//(34+(data_size+1)*10)*oneBitPeriod*1.4=(44+10*data_size)*oneBitPeriod*1.4us; //max single frame transfer time
     transferTime = transferTime*0.001;  //us to ms
    #if (LIN_DEBUG_LEVEL >= 1)
@@ -350,7 +363,7 @@ uint16_t lin_bus::write(uint8_t ident, uint8_t *data, uint8_t data_size)
 int lin_bus::read(uint8_t *data, uint8_t data_size)
 {
   uint8_t rec[data_size+3]; 
-  uint8_t readData[data_size+1]; 
+  uint8_t readData[data_size+1];   
 //    if(_serial->read() != -1)
 //    while (!Serial.available()){delay(200);};
     if(_serial->available()>(data_size+3))
@@ -402,7 +415,7 @@ int lin_bus::read(uint8_t *data, uint8_t data_size)
 int lin_bus::listen(uint8_t ident,uint8_t *data, uint8_t data_size)
 {
   uint8_t rec[data_size+3]; 
-  uint8_t readData[data_size+1]; 	
+  uint8_t readData[data_size+1];
     if(_serial->available()>(data_size+3))
     { // Check if there is an event on LIN bus      
       g_head2 = g_head1;
