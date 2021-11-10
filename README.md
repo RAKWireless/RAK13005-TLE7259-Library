@@ -72,6 +72,15 @@ Parameters:
 | out          | data_size | data buffer size |  
 |  return | | if read data is right return 1 else return 0 |
 
+/**
+  \brief       read data from LIN bus, checksum and ident validation
+  \param[in] 	read slaver node id 
+  \param[out]  *data       data buffer pointer  
+  \param[out]  data_size   data buffer size  
+  \return      if read data is right return 1 else return 0
+*/
+int lin_bus::listen(uint8_t ident,uint8_t *data, uint8_t data_size)
+
 **int readStream(uint8_t \*data,uint8_t data_size);**
 Read data stream from LIN BUS    
 Parameters:    
@@ -89,6 +98,23 @@ Parameters:
 | in          | ident | frame ID |   
 | out          | *data | data buffer pointer |   
 | out          | data_size | data buffer size |   
+|  return | | max transfer frame use time in milliscond | 
+
+**uint16_t writeRequest(uint8_t ident);**
+Write request package    
+Parameters:    
+| Direction | Name | Function | 
+| --------- | ---- | -------- |
+| in          | ident | frame ID |   
+|  return | | max transfer frame use time in milliscond | 
+
+**int writeResponse(uint8_t *data, uint8_t data_size);**
+Write response package    
+Parameters:    
+| Direction | Name | Function | 
+| --------- | ---- | -------- |
+| in          | *data | data buffer pointer | 
+| in          | data_size | data buffer size | 
 |  return | | max transfer frame use time in milliscond | 
 
 **int setPins(int enPin,int wkPin,int txPin );**
@@ -123,3 +149,35 @@ Parameters:
 | --------- | ---- | -------- |
 |  return | | time the transfer will take |
 
+**uint8_t validateParity(uint8_t ident) ;**
+Validate LIN frame protect ID    
+Parameters:    
+| Direction | Name | Function | 
+| --------- | ---- | -------- |
+| in          | ident | frame ID | 
+|  return | | if validate is ok return 1 else return 0 |
+
+**uint8_t validateChecksum(uint8_t *data, uint8_t data_size);**
+Validate LIN frame checksum    
+Parameters:    
+| Direction | Name | Function | 
+| --------- | ---- | -------- |
+| in          | *data | data buffer pointer | 
+| in          | data_size | data buffer size | 
+|  return | | if validate checksum ok return 1 else return 0 |
+
+**int busWakeUp(void);**
+Send wakeup frame for waking up all bus participants    
+Parameters:    
+| Direction | Name | Function | 
+| --------- | ---- | -------- |
+|  return | | always return 1 |
+
+**uint16_t waitTransferTime(uint16_t baudrate,uint8_t dataSize);**
+Calculate packet transfertime    
+Parameters:    
+| Direction | Name | Function | 
+| --------- | ---- | -------- |
+| in          | baudrate | Baudrate used to send | 
+| in          | dataSize | data buffer size | 
+|  return | | time the transfer will take |

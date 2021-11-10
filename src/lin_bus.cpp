@@ -2,8 +2,8 @@
  * @file lin_bus.h
  * @author rakwireless.com
  * @brief TLE7259-3GE LIN bus library
- * @version 0.1
- * @date 2021-05-01
+ * @version 0.3
+ * @date 2021-11-08
  * 
  * @copyright Copyright (c) 2021
  * 
@@ -277,7 +277,29 @@ uint8_t lin_bus::checkSum(uint8_t id, uint8_t *data, uint8_t numData)
   // return frame checkSum
   return chk;
 
-} // lin_bus::checksum()
+} 
+
+/**
+  \brief      Calculate LIN frame checksum.
+  \details    Method to calculate the LIN frame checksum as described in LIN1.0 spec
+  \param[in]  data        buffer containing data bytes
+  \param[in]  numData     number of data bytes in frame
+  \return     calculated frame checksum
+*/
+uint8_t lin_bus::checkSum(uint8_t *data, uint8_t numData)
+{
+  uint16_t chk=0x00;  
+  // loop over data bytes
+  for (uint8_t i = 0; i < numData; i++)
+  {
+    chk += (uint16_t) (data[i]);
+    if (chk>255)
+      chk -= 255;
+  }
+  chk = (uint8_t)(0xFF - ((uint8_t) chk));   // bitwise invert
+  // return frame checkSum
+  return chk;
+}
 /**
   \brief      for generating Synch Break
   \param[in]  no_bits    set serial Pause send bits
@@ -287,7 +309,7 @@ uint16_t lin_bus::serialPause(int no_bits)
 {
   // Calculate delay needed for 13 bits, depends on bound rate
   unsigned int del = oneBitPeriod*no_bits; // delay for number of bits (no-bits) in microseconds, depends on period
-  _serial->flush();    //清空串口缓存
+  _serial->flush();    //
   _serial->end();  
   #if defined(_VARIANT_RAK11300_)
   {
@@ -327,8 +349,19 @@ uint16_t lin_bus::write(uint8_t ident, uint8_t *data, uint8_t data_size)
   // Start interface
   sleep(1); // Go to Normal mode
   // Synch Break
+  #if defined(_VARIANT_RAK11200_)
+  {
+    _serial->begin(_baudrate1); // config Serial
+    _serial->write(0x0); // write Synch Byte to serial  
+    _serial->flush(); //ensure transfer all  
+    _serial->updateBaudRate(_baudrate); // config Serial 
+  } 
+  #else
+  {
     serialPause(13);
     _serial->begin(_baudrate); // config Serial
+  }
+  #endif  
   #if defined(_VARIANT_RAK11300_)
   {
     gpio_set_function(SERIAL1_TX, GPIO_FUNC_UART);
@@ -339,12 +372,13 @@ uint16_t lin_bus::write(uint8_t ident, uint8_t *data, uint8_t data_size)
     _serial->write(id); //_serial->write(ident); // write Identification Byte to serial
     for(int i=0;i<data_size;i++) _serial->write(data[i]); // write data to serial
     _serial->write(check); // write Checksum Byte to serial
+  _serial->flush(); //ensure transfer all
     delayMicroseconds(oneBitPeriod*20); //delayMicroseconds(oneBitPeriod/2); // wait for transmit complete
-    _serial->flush(); //ensure transfer all
 //    _serial->end(); // clear Serial config  
 //    sleep(0); // Go to Sleep mode   
     transferTime = (44+10*data_size)*oneBitPeriod*1.4;//(34+(data_size+1)*10)*oneBitPeriod*1.4=(44+10*data_size)*oneBitPeriod*1.4us; //max single frame transfer time
     transferTime = transferTime*0.001;  //us to ms
+  if(transferTime<=0) transferTime = 1;
    #if (LIN_DEBUG_LEVEL >= 1)
    {    
     LIN_DEBUG_SERIAL.printf("_baudrate1 is %d\r\n",_baudrate1);
@@ -353,6 +387,81 @@ uint16_t lin_bus::write(uint8_t ident, uint8_t *data, uint8_t data_size)
    } 
    #endif 
   return transferTime;
+}
+/**
+  \brief      write request package    
+  \param[in]  ident         frame ID  
+  \return     max transfer frame use time in milliscond
+*/
+uint16_t lin_bus::writeRequest(uint8_t ident)
+{
+//  uint8_t identByte = (ident&0x3f) | protectID(ident);
+  // Calculate checksum  
+  uint8_t id = protectID(ident);
+  #if (LIN_DEBUG_LEVEL >= 1)
+   {
+    LIN_DEBUG_SERIAL.printf("protectID is %d\r\n",id);
+   } 
+  #endif 
+  // Start interface
+  sleep(1); // Go to Normal mode
+  // Synch Break
+  #if defined(_VARIANT_RAK11200_)
+  {
+    _serial->begin(_baudrate1); // config Serial
+    _serial->write(0x0); // write Synch Byte to serial  
+    _serial->flush(); //ensure transfer all  
+    _serial->updateBaudRate(_baudrate); // config Serial 
+  } 
+  #else
+  {
+    serialPause(13); 
+    _serial->begin(_baudrate); // config Serial   
+  }
+  #endif  
+  #if defined(_VARIANT_RAK11300_)
+  {
+    gpio_set_function(SERIAL1_TX, GPIO_FUNC_UART);
+    gpio_set_function(SERIAL1_RX, GPIO_FUNC_UART);
+  }
+  #endif    
+  _serial->write(0x55); // write Synch Byte to serial
+  _serial->write(id); //_serial->write(ident); // write Identification Byte to serial
+  _serial->flush(); //ensure transfer all
+//  delayMicroseconds(oneBitPeriod*20); //delayMicroseconds(oneBitPeriod/2); // wait for transmit complete
+//  sleep(0); // Go to Sleep mode   
+  transferTime = 44*oneBitPeriod*1.4;//(34+(data_size+1)*10)*oneBitPeriod*1.4=(44+10*data_size)*oneBitPeriod*1.4us; //max single frame transfer time
+  transferTime = transferTime*0.001;  //us to ms
+  if(transferTime<=0) transferTime = 1;
+ #if (LIN_DEBUG_LEVEL >= 1)
+ {    
+  LIN_DEBUG_SERIAL.printf("_baudrate1 is %d\r\n",_baudrate1);
+  LIN_DEBUG_SERIAL.printf("_baudrate is %d\r\n",_baudrate);
+  LIN_DEBUG_SERIAL.printf("max transfer Time is %d\r\n",transferTime);
+ } 
+ #endif 
+ return transferTime;
+}
+/**
+  \brief      write response package    
+  \param[out]  *data       data buffer pointer  
+  \param[out]  data_size   data buffer size  
+  \return     max transfer frame use time in milliscond
+*/
+int lin_bus::writeResponse(uint8_t *data, uint8_t data_size)
+{
+  // Calculate checksum
+  uint8_t suma = 0;
+  suma = checkSum(data,data_size);
+  // Start interface
+  sleep(1); // Go to Normal mode
+  // Send data via Serial interface
+  for(int i=0;i<data_size;i++) _serial->write(data[i]); // write data to serial
+  _serial->write(suma); // write Checksum Byte to serial
+  _serial->flush(); //ensure transfer all
+//  delayMicroseconds(oneBitPeriod*20); 
+//  sleep(0); // Go to Sleep mode
+  return 1;
 }
 /**
   \brief       read data from LIN bus, checksum and ident validation
@@ -403,6 +512,14 @@ int lin_bus::read(uint8_t *data, uint8_t data_size)
         }
       }
     }
+    else
+    {
+      #if (LIN_DEBUG_LEVEL >= 2)
+         {         
+          LIN_DEBUG_SERIAL.printf("DEBUG_readBytes g_head1 is: %d\r\n",g_head1);
+         } 
+      #endif  
+    }
    return 0;
 }
 /**
@@ -416,7 +533,7 @@ int lin_bus::listen(uint8_t ident,uint8_t *data, uint8_t data_size)
 {
   uint8_t rec[data_size+3]; 
   uint8_t readData[data_size+1];
-    if(_serial->available()>(data_size+3))
+    if(_serial->available()>=(data_size+3))
     { // Check if there is an event on LIN bus      
       g_head2 = g_head1;
       g_head1 = _serial->read();   
@@ -452,6 +569,14 @@ int lin_bus::listen(uint8_t ident,uint8_t *data, uint8_t data_size)
           return 1;
         }
       }
+    }
+    else
+    {
+      #if (LIN_DEBUG_LEVEL >= 2)
+         {         
+          LIN_DEBUG_SERIAL.printf("serial available no data %d\r\n");
+         } 
+      #endif  
     }
    return 0;
 }

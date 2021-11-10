@@ -24,6 +24,13 @@ sleep		KEYWORD2
 busWakeUp	KEYWORD2
 waitTransferTime    KEYWORD2
 
+writeRequest            KEYWORD2
+writeResponse          KEYWORD2
+validateParity           KEYWORD2
+checkSum                KEYWORD2
+validateChecksum    KEYWORD2
+protectID                 KEYWORD2
+
 #######################################
 # Constants (LITERAL1)
 #######################################

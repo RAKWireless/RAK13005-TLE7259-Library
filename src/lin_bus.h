@@ -2,8 +2,8 @@
  * @file lin_bus.cpp
  * @author rakwireless.com
  * @brief TLE7259-3GE LIN bus library
- * @version 0.1
- * @date 2021-05-01
+ * @version 0.3
+ * @date 2021-11-08
  * 
  * @copyright Copyright (c) 2021
  * 
@@ -36,11 +36,19 @@ class lin_bus : public Stream {
 	int listen(uint8_t ident,uint8_t *data, uint8_t data_size); // read data from LIN bus slaver node, checksum and ident validation
     int readStream(uint8_t *data,uint8_t data_size);  // read data from LIN bus
     uint16_t write(uint8_t ident, uint8_t *data, uint8_t data_size);  // write whole package  
+    uint16_t writeRequest(uint8_t ident); // master write request  
+    int writeResponse(uint8_t *data,uint8_t data_size); // slaver write response  
       
     int setPins(int enPin,int wkPin,int txPin );  // config the TLE7259-3GE control pin
     int sleep(uint8_t sleep_state);   // method for controlling transceiver modes (0 - sleep, 1 - normal)   
     int busWakeUp(void);  // send wakeup frame for waking up all bus participants
     uint16_t waitTransferTime(uint16_t baudrate,uint8_t dataSize);  // calculate max frame transfer time
+
+    uint8_t validateParity(uint8_t ident); // for validating Identification Byte
+    uint8_t checkSum(uint8_t id, uint8_t *data,uint8_t numData);  // calculate frame checksum
+    uint8_t checkSum(uint8_t *data, uint8_t numData);  // calculate frame checksum
+    uint8_t validateChecksum(uint8_t *data, uint8_t data_size); // for validating checksum Byte
+    uint8_t protectID(uint8_t id); // calculate protected LIN ID    
 // Private methods and variables
   private:
    // internal variables
@@ -63,10 +71,6 @@ class lin_bus : public Stream {
     void setPinHigh(int pin); // set pin output high
 
     uint16_t serialPause(int no_bits);  // for generating Synch Break
-    uint8_t validateParity(uint8_t ident); // for validating Identification Byte
-    uint8_t checkSum(uint8_t id, uint8_t *data,uint8_t numData);  // calculate frame checksum
-    uint8_t validateChecksum(uint8_t *data, uint8_t data_size); // for validating checksum Byte
-    uint8_t protectID(uint8_t id); // calculate protected LIN ID
      
     virtual bool begin(uint16_t baudrate); //config LIN BUS serial port
     virtual void end();
